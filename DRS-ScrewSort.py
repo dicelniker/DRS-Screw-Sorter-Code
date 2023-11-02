@@ -10,6 +10,7 @@ import random
 root = tk.Tk()
 # the fancy stuff centers the window (at least in theory)
 root.geometry('800x600+' + str(int(root.winfo_screenwidth()/2-400)) + '+0')
+root.resizable(False, False)
 root.title('DRS ScrewSort')
 
 
@@ -17,6 +18,7 @@ root.title('DRS ScrewSort')
 runLoopCheck = False
 
 randNum = random.Random()
+
 
 # when the program starts
 def setup():
@@ -87,7 +89,7 @@ def main_loop_visual_stuff():
         for iteration in range(0, 50):
             try:
                 virtualBeltCanvas.itemconfig(beltRepresentationList[iteration],
-                                            fill=('light blue' if int(data_list[iteration]) else 'dark green'))
+                                             fill=('light blue' if int(data_list[iteration]) else 'dark green'))
             except _tkinter.TclError:
                 pass
 
@@ -105,7 +107,7 @@ def show_hide_current_detected():
 
     if check_currentDetected.get() == '1':
         currentDetectedFrame = ttk.Labelframe(homeTabFrame, text='Currently Detected Screw')
-        currentDetectedFrame.place(relx=0.05, rely=0.625, relwidth=0.3, relheight=0.15)
+        currentDetectedFrame.place(relx=0.05, rely=0.65, relwidth=0.3, relheight=0.15)
         currentDetectedLabel = ttk.Label(currentDetectedFrame, text='0', font='Helvetica 24')
         currentDetectedLabel.place(relx=0.5, rely=0.5, anchor='center')
     else:
@@ -119,18 +121,18 @@ def show_hide_virtual_belt():
 
     if check_virtualBelt.get() == '1':
         virtualBeltFrame = ttk.Labelframe(homeTabFrame, text='Known Screws on Belt')
-        virtualBeltFrame.place(relx=0.05, rely=0.8, relwidth=0.9, relheight=0.15)
+        virtualBeltFrame.place(relx=0.05, rely=0.825, relwidth=0.9, relheight=0.15)
         virtualBeltCanvas = tk.Canvas(virtualBeltFrame, bg='light gray')
         virtualBeltCanvas.place(x=0, y=0, relwidth=1, relheight=1)
         # generates virtual belt
         beltRepresentationList = []
-        for i in range(0, 50):
+        for iteration in range(0, 50):
             beltRepresentationList.append(
-                virtualBeltCanvas.create_rectangle((i * 14, 0), (i * 14 + 14, 100), fill='green'))
+                virtualBeltCanvas.create_rectangle((iteration * 14, 0), (iteration * 14 + 14, 100), fill='green'))
             # make sure to fill in the color immediately or else it won't update until the next cycle; annoying if the
             # machine is paused!
-            virtualBeltCanvas.itemconfig(beltRepresentationList[i],
-                                         fill=('light blue' if int(data_list[i]) else 'dark green'))
+            virtualBeltCanvas.itemconfig(beltRepresentationList[iteration],
+                                         fill=('light blue' if int(data_list[iteration]) else 'dark green'))
 
     else:
         virtualBeltFrame.destroy()
@@ -145,8 +147,22 @@ mainTabs.pack(fill='both', expand=True)
 homeTabFrame = ttk.Frame(mainTabs)
 homeTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
 
+welcomeFrame = ttk.Labelframe(homeTabFrame, text='Welcome')
+welcomeFrame.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.3)
+progNameLabel = ttk.Label(welcomeFrame, text='DRS ScrewSort', font='Helvetica 22')
+progNameLabel.place(relx=0.2, rely=0.5, anchor='center')
+progDescriptionLabel = ttk.Label(welcomeFrame, font='Helvetica 10', wraplength=400,
+                                 text='Hello, and welcome to the DRS Daylight Solutions "DRS ScrewSort" software for '
+                                      'your screw sorting device. To begin using, first set up the outputs in the '
+                                      '"output setup" tab. For ease of troubleshooting (or just for fun!) you can '
+                                      'enable and disable various visualizations below. For more in-depth '
+                                      'troubleshooting, you can view the datalog in the "log" tab. Once you have set '
+                                      'up the outputs and gotten familiar with the software, you can press "start" '
+                                      'below to activate the machine. Press "stop" to pause operation at any time.')
+progDescriptionLabel.place(relx=0.4, rely=0.05)
+
 startStopFrame = ttk.Labelframe(homeTabFrame, text='Start/Stop')
-startStopFrame.place(relx=0.05, rely=0.35, relwidth=0.55, relheight=0.25)
+startStopFrame.place(relx=0.05, rely=0.375, relwidth=0.55, relheight=0.25)
 startButton = tk.Button(startStopFrame, bg='green', text='Start',
                         font='Helvetica, 28', command=begin_the_action)
 startButton.place(relx=0.3, rely=0.5, anchor='center')
@@ -158,7 +174,7 @@ check_currentDetected = tk.StringVar()
 check_virtualBelt = tk.StringVar()
 
 visualsFrame = ttk.Labelframe(homeTabFrame, text='Visualizations')
-visualsFrame.place(relx=0.65, rely=0.35, relwidth=0.3, relheight=0.25)
+visualsFrame.place(relx=0.65, rely=0.375, relwidth=0.3, relheight=0.25)
 visualsCheck_detectedScrewType = ttk.Checkbutton(visualsFrame, text='Detected Screw Type',
                                                  variable=check_currentDetected, command=show_hide_current_detected)
 visualsCheck_detectedScrewType.place(relx=0.1, rely=0.1)
@@ -181,7 +197,7 @@ mainTabs.add(outputTabFrame, text='    Output Setup    ')
 
 # scheduler setup code!
 scheduler = BackgroundScheduler()
-scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.1)
+scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.175)
 scheduler.start()
 
 if __name__ == '__main__':
