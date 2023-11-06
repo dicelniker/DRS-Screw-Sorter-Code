@@ -1,6 +1,7 @@
 import _tkinter
 import tkinter as tk
 from tkinter import ttk
+from tkinter import scrolledtext
 # from tkinter import messagebox
 from apscheduler.schedulers.background import BackgroundScheduler
 import random
@@ -27,9 +28,15 @@ def setup():
 
 # when start button is pressed
 def begin_the_action():
+    global logTextVar
+
     # immediately disables the start button to prevent running this twice accidentally
     startButton['state'] = 'disabled'
     stopButton['state'] = 'normal'
+    logText.configure(state='normal')
+    logText.insert(tk.INSERT, 'Starting run sequence...\n')
+    logText.configure(state='disabled')
+
     root.update()
 
     global runLoopCheck
@@ -37,11 +44,16 @@ def begin_the_action():
 
 
 def stop_the_action():
+    global logTextVar
     global runLoopCheck
     runLoopCheck = False
 
     startButton['state'] = 'normal'
     stopButton['state'] = 'disabled'
+    logText.configure(state='normal')
+    logText.insert(tk.INSERT, 'RUN SEQUENCE DISABLED!\n')
+    logText.configure(state='disabled')
+
     root.update()
 
 
@@ -67,7 +79,9 @@ def main_loop_ai_stuff():
     global data_list
     global servo_angle
 
-    print('AI call placeholder!')
+    logText.configure(state='normal')
+    logText.insert(tk.INSERT, 'AI call placeholder!\n')
+    logText.configure(state='disabled')
     current_detected_screw_number = str(randNum.randint(0, 1))
     if current_detected_screw_number != '0':
         data_list[0] = current_detected_screw_number
@@ -186,9 +200,14 @@ visualsCheck_virtualBelt.place(relx=0.1, rely=0.3)
 mainTabs.add(homeTabFrame, text='    Run/Stop    ')
 
 # log tab
-lagTabFrame = ttk.Frame(mainTabs)
-lagTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
-mainTabs.add(lagTabFrame, text='    Log    ')
+logTabFrame = ttk.Frame(mainTabs)
+logTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
+
+logText = scrolledtext.ScrolledText(logTabFrame)
+logText.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.9)
+logText.configure(state='disabled')
+
+mainTabs.add(logTabFrame, text='    Log    ')
 
 # Output Setup tab
 outputTabFrame = ttk.Frame(mainTabs)
