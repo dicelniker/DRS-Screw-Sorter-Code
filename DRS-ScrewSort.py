@@ -2,6 +2,7 @@ import _tkinter
 import tkinter as tk
 from tkinter import ttk
 from tkinter import scrolledtext
+from tkinter import filedialog
 # from tkinter import messagebox
 from apscheduler.schedulers.background import BackgroundScheduler
 import random
@@ -152,6 +153,17 @@ def show_hide_virtual_belt():
         virtualBeltFrame.destroy()
 
 
+def save_log_to_file():
+    saveLogButton['state'] = 'disabled'
+    fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.txt')
+    if fileSaver is None:
+        return
+    textToSave = logText.get(1.0, tk.END)
+    fileSaver.write(textToSave)
+    fileSaver.close()
+    saveLogButton['state'] = 'normal'
+
+
 # GUI CODE
 # main tab set
 mainTabs = ttk.Notebook(root)
@@ -204,8 +216,11 @@ logTabFrame = ttk.Frame(mainTabs)
 logTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
 
 logText = scrolledtext.ScrolledText(logTabFrame)
-logText.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.9)
+logText.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.8)
 logText.configure(state='disabled')
+
+saveLogButton = ttk.Button(logTabFrame, text='Click here to save log file to system.', command=save_log_to_file)
+saveLogButton.place(relx=0.5, rely=0.9, anchor='n')
 
 mainTabs.add(logTabFrame, text='    Log    ')
 
