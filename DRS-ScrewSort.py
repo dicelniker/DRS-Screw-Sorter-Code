@@ -155,14 +155,50 @@ def show_hide_virtual_belt():
 
 def save_log_to_file():
     saveLogButton['state'] = 'disabled'
-    fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.txt')
+    fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.txt', title='Save Log to System')
     if fileSaver is None:
+        saveLogButton['state'] = 'normal'
         return
     textToSave = logText.get(1.0, tk.END)
     fileSaver.write(textToSave)
     fileSaver.close()
     saveLogButton['state'] = 'normal'
 
+
+def save_preset_to_file():
+    # disabling both to avoid potential risks of multiple file dialogs at once.
+    presetSaveButton['state'] = 'disabled'
+    presetLoadButton['state'] = 'disabled'
+    # get the file as an object.
+    fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.txt', title='Save Settings Preset to System')
+    # make sure a file was actually selected!
+    if fileSaver is None:
+        presetSaveButton['state'] = 'normal'
+        presetLoadButton['state'] = 'normal'
+        return
+    # getting the data from each combobox
+    textToSave = ''
+    fileSaver.write(textToSave)
+    fileSaver.close()
+    presetSaveButton['state'] = 'normal'
+    presetLoadButton['state'] = 'normal'
+
+
+def load_preset_from_file():
+    # disabling both to avoid potential risks of multiple file dialogs at once.
+    presetSaveButton['state'] = 'disabled'
+    presetLoadButton['state'] = 'disabled'
+    file = filedialog.askopenfile(mode='r', title='Select a preset file to open.',
+                                  filetypes=[('Preset Files', '*.preset')])
+    # make sure the opening wasn't canceled!
+    if file is None:
+        presetSaveButton['state'] = 'normal'
+        presetLoadButton['state'] = 'normal'
+        return
+    # file was selected, so continue
+
+    presetSaveButton['state'] = 'normal'
+    presetLoadButton['state'] = 'normal'
 
 # GUI CODE
 # main tab set
@@ -178,8 +214,7 @@ welcomeFrame.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.3)
 progNameLabel = ttk.Label(welcomeFrame, text='DRS ScrewSort', font='Helvetica 22')
 progNameLabel.place(relx=0.2, rely=0.5, anchor='center')
 progDescriptionLabel = ttk.Label(welcomeFrame, font='Helvetica 10', wraplength=400,
-                                 text='Hello, and welcome to the DRS Daylight Solutions "DRS ScrewSort" software for '
-                                      'your screw sorting device. To begin using, first set up the outputs in the '
+                                 text='Hello, and welcome! To begin using, first set up the outputs in the '
                                       '"output setup" tab. For ease of troubleshooting (or just for fun!) you can '
                                       'enable and disable various visualizations below. For more in-depth '
                                       'troubleshooting, you can view the datalog in the "log" tab. Once you have set '
@@ -227,6 +262,26 @@ mainTabs.add(logTabFrame, text='    Log    ')
 # Output Setup tab
 outputTabFrame = ttk.Frame(mainTabs)
 outputTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
+
+outputGuideFrame = ttk.LabelFrame(outputTabFrame, text='Output Setup Guide')
+outputGuideFrame.place(relx=0.05, rely=0.05, relwidth=0.4, relheight=0.6)
+outputGuideText = ttk.Label(outputGuideFrame,
+                            text='Use this tab to set up where to output each type of screw. '
+                                 'One box must always be set up as "Misc/Unknown" or else your system will nor run. To '
+                                 'choose what type of screw should go in each box, simply click on the dropdown menu '
+                                 'and select the screw type.')
+
+outputSaveFrame = ttk.LabelFrame(outputTabFrame, text='Save & Load Presets')
+outputSaveFrame.place(relx=0.05, rely=0.7, relwidth=0.4, relheight=0.25)
+presetSaveButton = ttk.Button(outputSaveFrame, text='Save Current Settings to File System', command=save_preset_to_file)
+presetSaveButton.place(relx=0.5, rely=0.33, anchor='center')
+presetLoadButton = ttk.Button(outputSaveFrame, text='Load Settings from File System', command=load_preset_from_file)
+presetLoadButton.place(relx=0.5, rely=0.67, anchor='center')
+
+
+outputChooserFrame = ttk.Labelframe(outputTabFrame, text='Output Type Selection')
+outputChooserFrame.place(relx=0.5, rely=0.05, relwidth=0.45, relheight=0.9)
+
 mainTabs.add(outputTabFrame, text='    Output Setup    ')
 
 # scheduler setup code!
