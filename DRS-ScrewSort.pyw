@@ -60,9 +60,12 @@ def stop_the_action():
 
 # screw types list
 screw_types = [
-    'Hex_head_big',
-    'Hex_head_small',
-    'Phillips_head_medium'
+    'None',
+    'Misc./Unknown',
+    'Screw Type 1',
+    'Screw Type 2',
+    'Screw Type 3',
+    'Screw Type 4'
 ]
 
 
@@ -170,14 +173,15 @@ def save_preset_to_file():
     presetSaveButton['state'] = 'disabled'
     presetLoadButton['state'] = 'disabled'
     # get the file as an object.
-    fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.txt', title='Save Settings Preset to System')
+    fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.preset', title='Save Settings Preset to System')
     # make sure a file was actually selected!
     if fileSaver is None:
         presetSaveButton['state'] = 'normal'
         presetLoadButton['state'] = 'normal'
         return
     # getting the data from each combobox
-    textToSave = ''
+    textToSave = (outputCombo1.get() + '\n' + outputCombo2.get() + '\n' + outputCombo3.get() + '\n' +
+                  outputCombo4.get() + '\n' + outputCombo5.get() + '\n' + outputCombo6.get() + '\n')
     fileSaver.write(textToSave)
     fileSaver.close()
     presetSaveButton['state'] = 'normal'
@@ -196,6 +200,13 @@ def load_preset_from_file():
         presetLoadButton['state'] = 'normal'
         return
     # file was selected, so continue
+    lines = file.readlines()
+    outputCombo1.set(lines[0])
+    outputCombo2.set(lines[1])
+    outputCombo3.set(lines[2])
+    outputCombo4.set(lines[3])
+    outputCombo5.set(lines[4])
+    outputCombo6.set(lines[5])
 
     presetSaveButton['state'] = 'normal'
     presetLoadButton['state'] = 'normal'
@@ -265,11 +276,12 @@ outputTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
 
 outputGuideFrame = ttk.LabelFrame(outputTabFrame, text='Output Setup Guide')
 outputGuideFrame.place(relx=0.05, rely=0.05, relwidth=0.4, relheight=0.6)
-outputGuideText = ttk.Label(outputGuideFrame,
+outputGuideText = ttk.Label(outputGuideFrame,wraplength=300,
                             text='Use this tab to set up where to output each type of screw. '
                                  'One box must always be set up as "Misc/Unknown" or else your system will nor run. To '
                                  'choose what type of screw should go in each box, simply click on the dropdown menu '
                                  'and select the screw type.')
+outputGuideText.place(relx=0.05, rely=0.05, relwidth=0.9, relheight=0.9)
 
 outputSaveFrame = ttk.LabelFrame(outputTabFrame, text='Save & Load Presets')
 outputSaveFrame.place(relx=0.05, rely=0.7, relwidth=0.4, relheight=0.25)
@@ -281,6 +293,48 @@ presetLoadButton.place(relx=0.5, rely=0.67, anchor='center')
 
 outputChooserFrame = ttk.Labelframe(outputTabFrame, text='Output Type Selection')
 outputChooserFrame.place(relx=0.5, rely=0.05, relwidth=0.45, relheight=0.9)
+outputLabel1 = ttk.Label(outputChooserFrame, text='Output 1:')
+outputLabel1.place(relx=0.2, rely=0.4)
+outputCombo1 = ttk.Combobox(outputChooserFrame)
+outputCombo1['values'] = screw_types
+outputCombo1['state'] = 'readonly'
+outputCombo1.set('None')
+outputCombo1.place(relx=0.4, rely=0.4)
+outputLabel2 = ttk.Label(outputChooserFrame, text='Output 2:')
+outputLabel2.place(relx=0.2, rely=0.5)
+outputCombo2 = ttk.Combobox(outputChooserFrame)
+outputCombo2['values'] = screw_types
+outputCombo2['state'] = 'readonly'
+outputCombo2.set('None')
+outputCombo2.place(relx=0.4, rely=0.5)
+outputLabel3 = ttk.Label(outputChooserFrame, text='Output 3:')
+outputLabel3.place(relx=0.2, rely=0.6)
+outputCombo3 = ttk.Combobox(outputChooserFrame)
+outputCombo3['values'] = screw_types
+outputCombo3['state'] = 'readonly'
+outputCombo3.set('None')
+outputCombo3.place(relx=0.4, rely=0.6)
+outputLabel4 = ttk.Label(outputChooserFrame, text='Output 4:')
+outputLabel4.place(relx=0.2, rely=0.7)
+outputCombo4 = ttk.Combobox(outputChooserFrame)
+outputCombo4['values'] = screw_types
+outputCombo4['state'] = 'readonly'
+outputCombo4.set('None')
+outputCombo4.place(relx=0.4, rely=0.7)
+outputLabel5 = ttk.Label(outputChooserFrame, text='Output 5:')
+outputLabel5.place(relx=0.2, rely=0.8)
+outputCombo5 = ttk.Combobox(outputChooserFrame)
+outputCombo5['values'] = screw_types
+outputCombo5['state'] = 'readonly'
+outputCombo5.set('None')
+outputCombo5.place(relx=0.4, rely=0.8)
+outputLabel6 = ttk.Label(outputChooserFrame, text='Output 6:')
+outputLabel6.place(relx=0.2, rely=0.9)
+outputCombo6 = ttk.Combobox(outputChooserFrame)
+outputCombo6['values'] = screw_types
+outputCombo6['state'] = 'readonly'
+outputCombo6.set('None')
+outputCombo6.place(relx=0.4, rely=0.9)
 
 mainTabs.add(outputTabFrame, text='    Output Setup    ')
 
