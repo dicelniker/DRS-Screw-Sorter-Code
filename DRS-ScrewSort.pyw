@@ -72,42 +72,56 @@ screw_types = [
 # setup data list
 data_list = []
 for i in range(0, 50):
-    data_list.append('0')
+    data_list.append('None')
 
-current_detected_screw_number = '0'
+current_detected_screw_number = 'None'
 servo_angle = 0
+
+
+def find_servo_pos():
+    global servo_angle
+    global screw_types
+    # no need to do anything if nothing's detected
+    # NOTE: nothing is done for the no-movement case of where the same type of screw is detected, as telling
+    # the servo to go to a position it is already in should have no effect anyhow.
+    if data_list[49] == 'None':
+        return
+
+    servo_angle = 30 * screw_types.index(data_list[49])
 
 
 def main_loop_ai_stuff():
     global current_detected_screw_number
     global data_list
-    global servo_angle
 
-    logText.configure(state='normal')
-    logText.insert(tk.INSERT, 'AI call placeholder!\n')
-    logText.configure(state='disabled')
-    current_detected_screw_number = str(randNum.randint(0, 1))
-    if current_detected_screw_number != '0':
+    current_detected_screw_number = screw_types[randNum.randint(0,
+                                                                (len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
+    if current_detected_screw_number != 'None':
         data_list[0] = current_detected_screw_number
+        logText.configure(state='normal')
+        logText.insert(tk.INSERT, 'Detected screw "' + current_detected_screw_number + '"\n')
+        logText.configure(state='disabled')
 
     # figure out servo angle
-    servo_angle = 30 * int(data_list[49])
+    find_servo_pos()
 
     # the last-most piece "falls off" the end of the virtual belt
-    data_list = ['0'] + data_list[0:49]
+    data_list = ['None'] + data_list[0:49]
 
 
 def main_loop_visual_stuff():
-    # used for the virtual belt visualization
 
     if check_currentDetected.get() == '1':
         currentDetectedLabel.configure(text=current_detected_screw_number)
+
+    if check_servoAngle.get() == '1':
+        servoAngleLabel.configure(text=servo_angle)
 
     if check_virtualBelt.get() == '1':
         for iteration in range(0, 50):
             try:
                 virtualBeltCanvas.itemconfig(beltRepresentationList[iteration],
-                                             fill=('light blue' if int(data_list[iteration]) else 'dark green'))
+                                             fill=('light blue' if (data_list[iteration] != 'None') else 'dark green'))
             except _tkinter.TclError:
                 pass
 
@@ -125,11 +139,25 @@ def show_hide_current_detected():
 
     if check_currentDetected.get() == '1':
         currentDetectedFrame = ttk.Labelframe(homeTabFrame, text='Currently Detected Screw')
-        currentDetectedFrame.place(relx=0.05, rely=0.65, relwidth=0.3, relheight=0.15)
+        currentDetectedFrame.place(relx=0.05, rely=0.65, relwidth=0.425, relheight=0.15)
         currentDetectedLabel = ttk.Label(currentDetectedFrame, text='0', font='Helvetica 24')
         currentDetectedLabel.place(relx=0.5, rely=0.5, anchor='center')
     else:
         currentDetectedFrame.destroy()
+
+
+def show_hide_servo_angle():
+    global servoAngleFrame
+    global servo_angle
+    global servoAngleLabel
+
+    if check_servoAngle.get() == '1':
+        servoAngleFrame = ttk.Labelframe(homeTabFrame, text='Current Servo Angle')
+        servoAngleFrame.place(relx=0.525, rely=0.65, relwidth=0.425, relheight=0.15)
+        servoAngleLabel = ttk.Label(servoAngleFrame, text='0', font='Helvetica 24')
+        servoAngleLabel.place(relx=0.5, rely=0.5, anchor='center')
+    else:
+        servoAngleFrame.destroy()
 
 
 def show_hide_virtual_belt():
@@ -150,7 +178,8 @@ def show_hide_virtual_belt():
             # make sure to fill in the color immediately or else it won't update until the next cycle; annoying if the
             # machine is paused!
             virtualBeltCanvas.itemconfig(beltRepresentationList[iteration],
-                                         fill=('light blue' if int(data_list[iteration]) else 'dark green'))
+                                         fill=('light blue' if int(data_list.index(data_list[iteration]))
+                                               else 'dark green'))
 
     else:
         virtualBeltFrame.destroy()
@@ -243,6 +272,7 @@ stopButton = tk.Button(startStopFrame, bg='red', fg='white', text='Finish',
 stopButton.place(relx=0.7, rely=0.5, anchor='center')
 
 check_currentDetected = tk.StringVar()
+check_servoAngle = tk.StringVar()
 check_virtualBelt = tk.StringVar()
 
 visualsFrame = ttk.Labelframe(homeTabFrame, text='Visualizations')
@@ -250,6 +280,9 @@ visualsFrame.place(relx=0.65, rely=0.375, relwidth=0.3, relheight=0.25)
 visualsCheck_detectedScrewType = ttk.Checkbutton(visualsFrame, text='Detected Screw Type',
                                                  variable=check_currentDetected, command=show_hide_current_detected)
 visualsCheck_detectedScrewType.place(relx=0.1, rely=0.1)
+visualsCheck_servoAngle = ttk.Checkbutton(visualsFrame, text='Current Servo Angle',
+                                          variable=check_servoAngle, command=show_hide_servo_angle)
+visualsCheck_servoAngle.place(relx=0.1, rely=0.5)
 visualsCheck_virtualBelt = ttk.Checkbutton(visualsFrame, text='Known Screws on Belt',
                                            variable=check_virtualBelt, command=show_hide_virtual_belt)
 visualsCheck_virtualBelt.place(relx=0.1, rely=0.3)
