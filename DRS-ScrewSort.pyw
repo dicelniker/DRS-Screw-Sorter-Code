@@ -38,6 +38,12 @@ def begin_the_action():
     logText.insert(tk.INSERT, 'Starting run sequence...\n')
     logText.configure(state='disabled')
 
+    global servo_rot_list
+    servo_rot_list = [
+        outputCombo1.get(), outputCombo2.get(), outputCombo3.get(),
+        outputCombo4.get(), outputCombo5.get(), outputCombo6.get()
+    ]
+    print(servo_rot_list)
     root.update()
 
     global runLoopCheck
@@ -61,11 +67,10 @@ def stop_the_action():
 # screw types list
 screw_types = [
     'None',
-    'Misc./Unknown',
     'Screw Type 1',
     'Screw Type 2',
     'Screw Type 3',
-    'Screw Type 4'
+    'Misc/Unknown'
 ]
 
 
@@ -74,7 +79,8 @@ data_list = []
 for i in range(0, 50):
     data_list.append('None')
 
-current_detected_screw_number = 'None'
+current_detected_screw_name = 'None'
+servo_rot_list = []
 servo_angle = 0
 
 
@@ -87,23 +93,30 @@ def find_servo_pos():
     if data_list[49] == 'None':
         return
 
-    servo_angle = 30 * screw_types.index(data_list[49])
+    global servo_rot_list
+    # if the screw type wasn't selected in outputs it'll output an error!
+    try:
+        servo_angle = 30 * (servo_rot_list.index(data_list[49]) + 1)
+    except ValueError:
+        servo_angle = 30 * (servo_rot_list.index('Misc/Unknown') + 1)
 
 
 def main_loop_ai_stuff():
-    global current_detected_screw_number
+    global current_detected_screw_name
     global data_list
 
-    current_detected_screw_number = screw_types[randNum.randint(0,
-                                                                (len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
-    if current_detected_screw_number != 'None':
-        data_list[0] = current_detected_screw_number
+    current_detected_screw_name = screw_types[randNum.randint(0,
+                                                              (len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
+    if current_detected_screw_name != 'None':
+        data_list[0] = current_detected_screw_name
         logText.configure(state='normal')
-        logText.insert(tk.INSERT, 'Detected screw "' + current_detected_screw_number + '"\n')
+        logText.insert(tk.INSERT, 'Detected screw "' + current_detected_screw_name + '"\n')
         logText.configure(state='disabled')
 
     # figure out servo angle
     find_servo_pos()
+    # send servo angle to servo arduino
+    
 
     # the last-most piece "falls off" the end of the virtual belt
     data_list = ['None'] + data_list[0:49]
@@ -112,7 +125,7 @@ def main_loop_ai_stuff():
 def main_loop_visual_stuff():
 
     if check_currentDetected.get() == '1':
-        currentDetectedLabel.configure(text=current_detected_screw_number)
+        currentDetectedLabel.configure(text=current_detected_screw_name)
 
     if check_servoAngle.get() == '1':
         servoAngleLabel.configure(text=servo_angle)
@@ -134,7 +147,7 @@ def main_running_loop():
 
 def show_hide_current_detected():
     global currentDetectedFrame
-    global current_detected_screw_number
+    global current_detected_screw_name
     global currentDetectedLabel
 
     if check_currentDetected.get() == '1':
