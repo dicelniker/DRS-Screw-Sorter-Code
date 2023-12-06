@@ -6,6 +6,8 @@ from tkinter import filedialog
 # from tkinter import messagebox
 from apscheduler.schedulers.background import BackgroundScheduler
 import random
+import serial
+import serial.tools.list_ports
 
 
 # MAIN WINDOW SETUP
@@ -16,11 +18,21 @@ root.resizable(False, False)
 root.title('DRS ScrewSort')
 
 
+
 # ACTUAL CODE
 runLoopCheck = False
 
 randNum = random.Random()
 
+# fancy code ripped off the internet for determining which port the arduino is in!
+ports = list(serial.tools.list_ports.comports())
+for p in ports:
+    if "Arduino" in p.description:
+        port = p.name
+arduino = serial.Serial(port, 9600)
+
+# set the funnel to the center
+arduino.write(str.encode("90\n"))
 
 # when the program starts
 def setup():
@@ -43,7 +55,6 @@ def begin_the_action():
         outputCombo1.get(), outputCombo2.get(), outputCombo3.get(),
         outputCombo4.get(), outputCombo5.get(), outputCombo6.get()
     ]
-    print(servo_rot_list)
     root.update()
 
     global runLoopCheck
@@ -116,7 +127,7 @@ def main_loop_ai_stuff():
     # figure out servo angle
     find_servo_pos()
     # send servo angle to servo arduino
-    
+    arduino.write(str.encode(str(servo_angle) + "\n"))
 
     # the last-most piece "falls off" the end of the virtual belt
     data_list = ['None'] + data_list[0:49]
@@ -386,7 +397,7 @@ mainTabs.add(outputTabFrame, text='    Output Setup    ')
 
 # scheduler setup code!
 scheduler = BackgroundScheduler()
-scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.175)
+scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.15)
 scheduler.start()
 
 if __name__ == '__main__':
