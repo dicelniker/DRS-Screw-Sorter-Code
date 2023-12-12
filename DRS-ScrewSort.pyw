@@ -3,11 +3,21 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import scrolledtext
 from tkinter import filedialog
-# from tkinter import messagebox
+from tkinter import messagebox
 from apscheduler.schedulers.background import BackgroundScheduler
 import random
 import serial
 import serial.tools.list_ports
+
+import tensorflow as tf
+import os
+import torch
+from PIL import Image
+from torchvision import transforms
+import cv2
+import numpy as np
+import math
+import json
 
 
 # MAIN WINDOW SETUP
@@ -24,12 +34,59 @@ runLoopCheck = False
 
 randNum = random.Random()
 
+mobilenet = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
+mobilenet.eval()
+
+checkpoint_path = "training_1/cp.ckpt"#not including the part after this
+
+model=tf.keras.models.Sequential([
+	tf.keras.Input(shape=(1000,)),
+	tf.keras.layers.Dense(1000,activation="selu"),#selu 75%ish accuracy
+	tf.keras.layers.Dropout(0.3),
+	tf.keras.layers.Dense(20),#20: 75%ish accuracy
+	tf.keras.layers.Dropout(0.1),
+	tf.keras.layers.Dense(4)#does the last layer need to be at least the number of classes?yes
+])
+model.load_weights(checkpoint_path)
+
+device_num=1#should be the attached webcam
+cap = cv2.VideoCapture(device_num)
+if not cap.isOpened():
+	print("couldn't open camera")
+	exit()
+
+
+def get_prediction(image,embedding=False):
+	input_image = Image.fromarray(image)
+	preprocess = transforms.Compose([
+		transforms.Resize(256), #necessary?
+		#transforms.CenterCrop(224), #necessary? WAS NOT USED IN TRAINING reduces output size significantly(training is 150 mb rather than 1gb)
+		transforms.ToTensor(),
+		transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+	])
+	input_tensor = preprocess(input_image)
+	input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
+	# move the input and model to GPU for speed if available
+	if torch.cuda.is_available():
+		input_batch = input_batch.to('cuda')
+		mobilenet.to('cuda')
+	with torch.no_grad():
+		output = mobilenet(input_batch)[0]
+	if(embedding==True):
+		return mobilenet(input_batch)[0]
+	return model.predict(np.array([output]))#list (actual python list) of length 4 with logits
+
+
 # fancy code ripped off the internet for determining which port the arduino is in!
 ports = list(serial.tools.list_ports.comports())
 for p in ports:
     if "Arduino" in p.description:
         port = p.name
-arduino = serial.Serial(port, 9600)
+try:
+     arduino = serial.Serial(port, 9600)
+except NameError:
+     messagebox.showerror(title='Arduino not detected!', message='Please make sure the servo arduino is connected to this device.')
+     exit()
 
 # set the funnel to the center
 arduino.write(str.encode("90\n"))
@@ -57,8 +114,19 @@ def begin_the_action():
     ]
     root.update()
 
-    global runLoopCheck
-    runLoopCheck = True
+    if 'Misc/Unknown' in servo_rot_list:
+         global runLoopCheck
+         runLoopCheck = True
+    else:
+         startButton['state'] = 'normal'
+         stopButton['state'] = 'disabled'
+         logText.configure(state='normal')
+         logText.insert(tk.INSERT, 'Error: no "Misc/Unknown" output selected!\n')
+         logText.configure(state='disabled')
+         
+         root.update()
+         messagebox.showerror(title='Output Setup Error', message='Please specify an output as "Misc/Unknown"!')
+         
 
 
 def stop_the_action():
@@ -78,10 +146,18 @@ def stop_the_action():
 # screw types list
 screw_types = [
     'None',
-    'Screw Type 1',
-    'Screw Type 2',
-    'Screw Type 3',
+    '0-80 Screw',
+    '4-40 Screw',
+    '8-32 Screw',
     'Misc/Unknown'
+]
+
+# screw type map
+screw_map = [
+1,
+3,
+2,
+0
 ]
 
 
@@ -116,8 +192,13 @@ def main_loop_ai_stuff():
     global current_detected_screw_name
     global data_list
 
-    current_detected_screw_name = screw_types[randNum.randint(0,
-                                                              (len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
+    #current_detected_screw_name = screw_types[randNum.randint(0,
+                                                              #(len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
+    #set frame here
+    success,frame = cap.read()
+    index_in_ml_space = tf.math.argmax(get_prediction(frame),1).numpy()[0]#do we need to take a softmax first? only if we need the actual probabilities to compare
+    
+    current_detected_screw_name = screw_types[screw_map[index_in_ml_space]]###INTEGRATE WITH ML HERE
     if current_detected_screw_name != 'None':
         data_list[0] = current_detected_screw_name
         logText.configure(state='normal')
@@ -397,7 +478,7 @@ mainTabs.add(outputTabFrame, text='    Output Setup    ')
 
 # scheduler setup code!
 scheduler = BackgroundScheduler()
-scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.15)
+scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.2)
 scheduler.start()
 
 if __name__ == '__main__':
@@ -405,3 +486,8 @@ if __name__ == '__main__':
 
     root.mainloop()
     scheduler.shutdown()
+
+
+
+
+
