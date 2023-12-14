@@ -1,3 +1,10 @@
+# DRS ScrewSort
+# Application for DRS Daylight's screw sorting machine intern project
+# add credit as you add stuff :D
+# Overall program (all the tabs and such): Noam A.
+# A.I. stuff: Misha S.
+
+# main imports
 import _tkinter
 import tkinter as tk
 from tkinter import ttk
@@ -5,19 +12,19 @@ from tkinter import scrolledtext
 from tkinter import filedialog
 from tkinter import messagebox
 from apscheduler.schedulers.background import BackgroundScheduler
-import random
-import serial
+# I have NO idea why this isn't needed despite explicitly using it... keeping it here just in case -Noam
+# Misha predicts that maybe one of our AI libraries imports it inside the library
+# oh. apparently tkinter comes with serial bundled. keeping the "import serial" anyhow for posterity.
+# import serial
 import serial.tools.list_ports
 
+# AI imports
 import tensorflow as tf
-import os
 import torch
 from PIL import Image
 from torchvision import transforms
 import cv2
 import numpy as np
-import math
-import json
 
 
 # MAIN WINDOW SETUP
@@ -28,53 +35,52 @@ root.resizable(False, False)
 root.title('DRS ScrewSort')
 
 
-
 # ACTUAL CODE
 runLoopCheck = False
-
-randNum = random.Random()
 
 mobilenet = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
 mobilenet.eval()
 
-checkpoint_path = "training_1/cp.ckpt"#not including the part after this
+checkpoint_path = "training_1/cp.ckpt"  # not including the part after this
 
-model=tf.keras.models.Sequential([
-	tf.keras.Input(shape=(1000,)),
-	tf.keras.layers.Dense(1000,activation="selu"),#selu 75%ish accuracy
-	tf.keras.layers.Dropout(0.3),
-	tf.keras.layers.Dense(20),#20: 75%ish accuracy
-	tf.keras.layers.Dropout(0.1),
-	tf.keras.layers.Dense(4)#does the last layer need to be at least the number of classes?yes
+model = tf.keras.models.Sequential([
+                                    tf.keras.Input(shape=(1000,)),
+                                    tf.keras.layers.Dense(1000, activation="selu"),  # selu 75%ish accuracy
+                                    tf.keras.layers.Dropout(0.3),
+                                    tf.keras.layers.Dense(20),  # 20: 75%ish accuracy
+                                    tf.keras.layers.Dropout(0.1),
+                                    tf.keras.layers.Dense(4)  # last layer needs to be at least the num. of classes? yes
 ])
 model.load_weights(checkpoint_path)
 
-device_num=1#should be the attached webcam
+device_num = 1  # should be the attached webcam
 cap = cv2.VideoCapture(device_num)
 if not cap.isOpened():
-	print("couldn't open camera")
-	exit()
+    messagebox.showerror(title='Camera not detected',
+                         message='Please make sure the USB camera is connected to this device.')
+    exit()
 
 
-def get_prediction(image,embedding=False):
-	input_image = Image.fromarray(image)
-	preprocess = transforms.Compose([
-		transforms.Resize(256), #necessary?
-		#transforms.CenterCrop(224), #necessary? WAS NOT USED IN TRAINING reduces output size significantly(training is 150 mb rather than 1gb)
-		transforms.ToTensor(),
-		transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-	])
-	input_tensor = preprocess(input_image)
-	input_batch = input_tensor.unsqueeze(0) # create a mini-batch as expected by the model
-	# move the input and model to GPU for speed if available
-	if torch.cuda.is_available():
-		input_batch = input_batch.to('cuda')
-		mobilenet.to('cuda')
-	with torch.no_grad():
-		output = mobilenet(input_batch)[0]
-	if(embedding==True):
-		return mobilenet(input_batch)[0]
-	return model.predict(np.array([output]))#list (actual python list) of length 4 with logits
+def get_prediction(image, embedding=False):
+    input_image = Image.fromarray(image)
+    preprocess = transforms.Compose([
+        transforms.Resize(256),  # necessary?
+        # transforms.CenterCrop(224), #necessary? WAS NOT USED IN TRAINING reduces output size significantly(training is 150 mb rather than 1gb)
+        transforms.ToTensor(),
+        transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    input_tensor = preprocess(input_image)
+    # create a mini-batch as expected by the model
+    input_batch = input_tensor.unsqueeze(0)
+    # move the input and model to GPU for speed if available
+    if torch.cuda.is_available():
+        input_batch = input_batch.to('cuda')
+        mobilenet.to('cuda')
+    with torch.no_grad():
+        output = mobilenet(input_batch)[0]
+    if embedding:
+        return mobilenet(input_batch)[0]
+    return model.predict(np.array([output]))  # list (actual python list) of length 4 with logits
 
 
 # fancy code ripped off the internet for determining which port the arduino is in!
@@ -83,13 +89,18 @@ for p in ports:
     if "Arduino" in p.description:
         port = p.name
 try:
-     arduino = serial.Serial(port, 9600)
+    # I KNOW that it doesn't like that "port" can be undefined.
+    # HOWEVER this isn't actually possible, and it's just being fooled by the way I wrote the code lol -Noam
+    arduino = serial.Serial(port, 9600)
 except NameError:
-     messagebox.showerror(title='Arduino not detected!', message='Please make sure the servo arduino is connected to this device.')
-     exit()
+    messagebox.showerror(title='Arduino not detected!',
+                         message='Please make sure the servo arduino is connected to this device.')
+    exit()
 
 # set the funnel to the center
+# Note: idk why it's not the default one, but str.encode() makes it in the generic format expected by the arduino
 arduino.write(str.encode("90\n"))
+
 
 # when the program starts
 def setup():
@@ -103,10 +114,14 @@ def begin_the_action():
     # immediately disables the start button to prevent running this twice accidentally
     startButton['state'] = 'disabled'
     stopButton['state'] = 'normal'
+    # the text box is not editable while disabled, even by the program
+    # since we enable it then disable it *before* the root.update(), the user only sees the final result
     logText.configure(state='normal')
     logText.insert(tk.INSERT, 'Starting run sequence...\n')
     logText.configure(state='disabled')
 
+    # with this, we know what type of screw goes in what box.
+    # We can then just run servo_rot_list.index(desired screw) to get the relative turn angle
     global servo_rot_list
     servo_rot_list = [
         outputCombo1.get(), outputCombo2.get(), outputCombo3.get(),
@@ -114,20 +129,21 @@ def begin_the_action():
     ]
     root.update()
 
+    # a "Misc/Unknown" output is essential for when we add the ability to sort things based on confidence
+    # i.e. low confidence results will just be directed there instead of risking it being wrong
     if 'Misc/Unknown' in servo_rot_list:
-         global runLoopCheck
-         runLoopCheck = True
+        global runLoopCheck
+        runLoopCheck = True
     else:
-         startButton['state'] = 'normal'
-         stopButton['state'] = 'disabled'
-         logText.configure(state='normal')
-         logText.insert(tk.INSERT, 'Error: no "Misc/Unknown" output selected!\n')
-         logText.configure(state='disabled')
-         
-         root.update()
-         messagebox.showerror(title='Output Setup Error', message='Please specify an output as "Misc/Unknown"!')
-         
+        startButton['state'] = 'normal'
+        stopButton['state'] = 'disabled'
+        logText.configure(state='normal')
+        logText.insert(tk.INSERT, 'Error: no "Misc/Unknown" output selected!\n')
+        logText.configure(state='disabled')
 
+        root.update()
+        messagebox.showerror(title='Output Setup Error', message='Please specify an output as "Misc/Unknown"!')
+         
 
 def stop_the_action():
     global logTextVar
@@ -144,6 +160,7 @@ def stop_the_action():
 
 
 # screw types list
+# whenever you want to add new types of hardware, put them here
 screw_types = [
     'None',
     '0-80 Screw',
@@ -153,15 +170,22 @@ screw_types = [
 ]
 
 # screw type map
+# this is because the ID number of things detected by the AI model might not correspond to their ID in screw_types
 screw_map = [
-1,
-3,
-2,
-0
+             1,
+             3,
+             2,
+             0
 ]
 
 
 # setup data list
+# EXPLANATION: the data list is a "virtual belt".
+# What this means is that when a screw is detected, it is placed at the current location 0.
+# At each main loop iteration, we rotate the list, much like the real screws move along the belt so do the screws in
+# the virtual belt.
+# Each iteration takes a look at the end of the virtual belt to see where to turn the servo to make sure the screw
+# about to fall off will be directed correctly by the funnel. - Noam
 data_list = []
 for i in range(0, 50):
     data_list.append('None')
@@ -170,6 +194,8 @@ current_detected_screw_name = 'None'
 servo_rot_list = []
 servo_angle = 0
 
+
+# the below few functions are just splittings up of the main loop. They are split by subject.
 
 def find_servo_pos():
     global servo_angle
@@ -192,13 +218,14 @@ def main_loop_ai_stuff():
     global current_detected_screw_name
     global data_list
 
-    #current_detected_screw_name = screw_types[randNum.randint(0,
-                                                              #(len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
-    #set frame here
-    success,frame = cap.read()
-    index_in_ml_space = tf.math.argmax(get_prediction(frame),1).numpy()[0]#do we need to take a softmax first? only if we need the actual probabilities to compare
+    # current_detected_screw_name = screw_types[randNum.randint(0,
+                                                            # (len(screw_types) - 1)) if randNum.randint(0, 1) else 0]
+    # set frame here
+    success, frame = cap.read()
+    # do we need to take a softmax first? only if we need the actual probabilities to compare
+    index_in_ml_space = tf.math.argmax(get_prediction(frame), 1).numpy()[0]
     
-    current_detected_screw_name = screw_types[screw_map[index_in_ml_space]]###INTEGRATE WITH ML HERE
+    current_detected_screw_name = screw_types[screw_map[index_in_ml_space]]
     if current_detected_screw_name != 'None':
         data_list[0] = current_detected_screw_name
         logText.configure(state='normal')
@@ -222,6 +249,7 @@ def main_loop_visual_stuff():
     if check_servoAngle.get() == '1':
         servoAngleLabel.configure(text=servo_angle)
 
+    # has to iterate through every rectangle object in the canvas
     if check_virtualBelt.get() == '1':
         for iteration in range(0, 50):
             try:
@@ -345,6 +373,7 @@ def load_preset_from_file():
     presetSaveButton['state'] = 'normal'
     presetLoadButton['state'] = 'normal'
 
+
 # GUI CODE
 # main tab set
 mainTabs = ttk.Notebook(root)
@@ -414,7 +443,7 @@ outputTabFrame.place(x=0, y=0, relwidth=1, relheight=1)
 
 outputGuideFrame = ttk.LabelFrame(outputTabFrame, text='Output Setup Guide')
 outputGuideFrame.place(relx=0.05, rely=0.05, relwidth=0.4, relheight=0.6)
-outputGuideText = ttk.Label(outputGuideFrame,wraplength=300,
+outputGuideText = ttk.Label(outputGuideFrame, wraplength=300,
                             text='Use this tab to set up where to output each type of screw. '
                                  'One box must always be set up as "Misc/Unknown" or else your system will nor run. To '
                                  'choose what type of screw should go in each box, simply click on the dropdown menu '
@@ -486,8 +515,3 @@ if __name__ == '__main__':
 
     root.mainloop()
     scheduler.shutdown()
-
-
-
-
-
