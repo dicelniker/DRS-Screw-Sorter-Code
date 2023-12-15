@@ -37,20 +37,23 @@ root.title('DRS ScrewSort')
 
 # ACTUAL CODE
 runLoopCheck = False
-
+# import pretrained mobilenet(inputs an image, outputs a 1000 dimensional array)
 mobilenet = torch.hub.load('pytorch/vision:v0.10.0', 'mobilenet_v2', pretrained=True)
 mobilenet.eval()
 
-checkpoint_path = "training_1/cp.ckpt"  # not including the part after this
+# relative path of tensorflow model (the one we trained)
+checkpoint_path = "training_1/cp.ckpt"
 
+# if you can't understand this, actually learn how to code with machine learning before messing around with it -Misha
 model = tf.keras.models.Sequential([
                                     tf.keras.Input(shape=(1000,)),
-                                    tf.keras.layers.Dense(1000, activation="selu"),  # selu 75%ish accuracy
+                                    tf.keras.layers.Dense(1000, activation="selu"),
                                     tf.keras.layers.Dropout(0.3),
-                                    tf.keras.layers.Dense(20),  # 20: 75%ish accuracy
+                                    tf.keras.layers.Dense(20),
                                     tf.keras.layers.Dropout(0.1),
-                                    tf.keras.layers.Dense(4)  # last layer needs to be at least the num. of classes? yes
+                                    tf.keras.layers.Dense(4)  # last layer needs to be at least the num of classes? yes
 ])
+# load the weights after creating a model with THE SAME SHAPE as the one that was trained
 model.load_weights(checkpoint_path)
 
 device_num = 1  # should be the attached webcam
@@ -62,10 +65,12 @@ if not cap.isOpened():
 
 
 def get_prediction(image, embedding=False):
+    # input image, output length 4 array, see screw_map and screw_types to understand what they mean
     input_image = Image.fromarray(image)
     preprocess = transforms.Compose([
         transforms.Resize(256),  # necessary?
-        # transforms.CenterCrop(224), #necessary? WAS NOT USED IN TRAINING reduces output size significantly(training is 150 mb rather than 1gb)
+        # is below necessary? NOT USED IN TRAINING reduces output size significantly(training is 150 mb rather than 1gb)
+        # transforms.CenterCrop(224),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
     ])
@@ -80,7 +85,8 @@ def get_prediction(image, embedding=False):
         output = mobilenet(input_batch)[0]
     if embedding:
         return mobilenet(input_batch)[0]
-    return model.predict(np.array([output]))  # list (actual python list) of length 4 with logits
+    # list (actual python list) of length 4 with logits (higher is more likely)
+    return model.predict(np.array([output]))
 
 
 # fancy code ripped off the internet for determining which port the arduino is in!
