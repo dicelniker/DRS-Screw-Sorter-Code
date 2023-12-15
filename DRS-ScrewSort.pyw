@@ -259,12 +259,15 @@ def main_loop_visual_stuff():
                 pass
 
 
+# this is triggered every certain amount of time by apscheduler
 def main_running_loop():
     if runLoopCheck:
         main_loop_ai_stuff()
         main_loop_visual_stuff()
 
 
+# it destroys the frame because that's the easiest solution, and it's just written to within a TRY block.
+# don't question it, it works perfectly (and I'm not even being sarcastic, it actually works great) - Noam
 def show_hide_current_detected():
     global currentDetectedFrame
     global current_detected_screw_name
@@ -306,6 +309,8 @@ def show_hide_virtual_belt():
         # generates virtual belt
         beltRepresentationList = []
         for iteration in range(0, 50):
+            # by putting them in a list, it's possible to access them iteratively
+            # without having to change the name each time
             beltRepresentationList.append(
                 virtualBeltCanvas.create_rectangle((iteration * 14, 0), (iteration * 14 + 14, 100), fill='green'))
             # make sure to fill in the color immediately or else it won't update until the next cycle; annoying if the
@@ -318,12 +323,19 @@ def show_hide_virtual_belt():
         virtualBeltFrame.destroy()
 
 
+# This uses tkinter's built-in file explorer tools to save the file
 def save_log_to_file():
+    # disable the button so that you can't have multiple file dialogs open at once
     saveLogButton['state'] = 'disabled'
+    # mode='w' means it's 'w'riting a file
     fileSaver = filedialog.asksaveasfile(mode='w', defaultextension='.txt', title='Save Log to System')
+    # if the file dialog was canceled or closed without saving, then do nothing
     if fileSaver is None:
         saveLogButton['state'] = 'normal'
         return
+    # gets the entire datalog
+    # This could potentially cause large memory usage because the datalog is now duplicated in memory, but only for a
+    # little bit because it'll go out of scope and be deleted once the function ends
     textToSave = logText.get(1.0, tk.END)
     fileSaver.write(textToSave)
     fileSaver.close()
@@ -375,6 +387,9 @@ def load_preset_from_file():
 
 
 # GUI CODE
+# NOTE: this is all much simpler than it looks. It's very repetitive, so commenting everything isn't worth it.
+# Search online if you're unsure what something does.
+
 # main tab set
 mainTabs = ttk.Notebook(root)
 mainTabs.pack(fill='both', expand=True)
@@ -507,6 +522,7 @@ mainTabs.add(outputTabFrame, text='    Output Setup    ')
 
 # scheduler setup code!
 scheduler = BackgroundScheduler()
+# Only thing you really have to worry about here is the "seconds=X" part. This will trigger it every X seconds
 scheduler.add_job(main_running_loop, 'interval', id='mainLoop', seconds=0.2)
 scheduler.start()
 
