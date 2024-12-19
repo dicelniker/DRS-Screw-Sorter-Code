@@ -146,7 +146,7 @@ board.digital[7].write(180)
 try:
     while True:
         if(objectCheck()):
-            time.sleep(2)
+            time.sleep(1)
             catScrew()
             board.digital[7].write(0)
             time.sleep(.5)
