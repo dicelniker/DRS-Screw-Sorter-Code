@@ -49,13 +49,13 @@ class CustomDepthwiseConv2D(DepthwiseConv2D):
         super().__init__(**kwargs)
 
 # Verify the model file exists
-if not os.path.exists('keras_model.h5'):
+if not os.path.exists('Users\nareddulas3557\Documents\GitHub\DRS-Screw-Sorter-Code\converted_keras (4)\keras_model.h5'):
    print("Error: keras_model.h5 not found. Please ensure the file is in the same directory.")
    exit()
 
 # Load the .h5 model with custom DepthwiseConv2D
 try:
-    model = load_model('Users\nareddulas3557\Documents\GitHub\DRS-Screw-Sorter-Code\converted_keras (4)\keras_model.h5', custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D})
+    model = load_model('keras_model.h5', custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D})
     print("Model loaded successfully.")
 except Exception as e:
     print(f"Error loading model: {e}")
