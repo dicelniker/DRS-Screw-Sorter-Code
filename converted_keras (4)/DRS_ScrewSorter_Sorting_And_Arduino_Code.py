@@ -8,6 +8,7 @@ import time
 import os
 import math
 from pyfirmata2 import Arduino, SERVO, util
+import h5py
 
 def crop_image_by_size(image):
     crop_width = 230
@@ -49,25 +50,25 @@ class CustomDepthwiseConv2D(DepthwiseConv2D):
         super().__init__(**kwargs)
 
 # Verify the model file exists
-if not os.path.exists('Users\nareddulas3557\Documents\GitHub\DRS-Screw-Sorter-Code\converted_keras (4)\keras_model.h5'):
+if not os.path.exists('converted_keras (4)\keras_model.h5'):
    print("Error: keras_model.h5 not found. Please ensure the file is in the same directory.")
    exit()
 
 # Load the .h5 model with custom DepthwiseConv2D
 try:
-    model = load_model('keras_model.h5', custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D})
+    model = load_model('converted_keras (4)\keras_model.h5', custom_objects={'DepthwiseConv2D': CustomDepthwiseConv2D})
     print("Model loaded successfully.")
 except Exception as e:
     print(f"Error loading model: {e}")
     exit()
 
 # Verify the labels file exists
-if not os.path.exists('labels.txt'):
+if not os.path.exists('converted_keras (4)\labels.txt'):
     print("Error: labels.txt not found. Please ensure the file is in the same directory.")
     exit()
 
 # Load class names
-class_names = open('labels.txt', 'r').readlines()
+class_names = open('converted_keras (4)\labels.txt', 'r').readlines()
 
 # Initialize the camera
 camera_index = 1  # Change to 1 or higher for a USB-connected camera
