@@ -138,7 +138,7 @@ def objectCheck():
         # Print prediction and confidence score
         
 
-board = Arduino("COM3")
+board = Arduino("COM15")
 it = util.Iterator(board)
 it.start()
 
