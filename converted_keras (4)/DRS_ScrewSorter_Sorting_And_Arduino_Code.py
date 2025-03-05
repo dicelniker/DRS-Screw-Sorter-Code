@@ -139,13 +139,15 @@ def objectCheck():
         # Print prediction and confidence score
         
 
-board = Arduino("COM15")
+board = Arduino("COM10")
 it = util.Iterator(board)
 it.start()
 
+#trapdoor
 board.digital[7].mode = SERVO
 board.digital[7].write(180)
 
+#chute
 board.digital[8].mode = SERVO
 board.digital[8].write(180)
 try:
