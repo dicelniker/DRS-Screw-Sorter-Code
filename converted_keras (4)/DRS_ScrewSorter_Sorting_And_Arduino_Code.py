@@ -70,7 +70,7 @@ if not os.path.exists('converted_keras (4)\labels.txt'):
 class_names = open('converted_keras (4)\labels.txt', 'r').readlines()
 
 # Initialize the camera
-camera_index = 0  # Change to 1 or higher for a USB-connected camera
+camera_index = 1  # Change to 1 or higher for a USB-connected camera
 camera = cv2.VideoCapture(camera_index)
 if not camera.isOpened():
     print(f"Error: Could not access camera with index {camera_index}.")
@@ -139,7 +139,7 @@ def objectCheck():
         # Print prediction and confidence score
         
 
-board = Arduino("COM10")
+board = Arduino("COM15")
 it = util.Iterator(board)
 it.start()
 
