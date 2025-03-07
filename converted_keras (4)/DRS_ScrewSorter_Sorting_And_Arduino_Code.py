@@ -23,7 +23,7 @@ def crop_image_by_size(image):
         return
     
     # Calculate the center of the image
-    center_x, center_y = img_width / (1.6), img_height / (1.375)
+    center_x, center_y = (img_width / (1.6))-30, (img_height / (1.375))-70
 
     # Calculate the crop box
     x1 = math.floor(center_x - (crop_width / 2))
@@ -31,9 +31,7 @@ def crop_image_by_size(image):
     x2 = math.floor(center_x + (crop_width / 2))
     y2 = math.floor(center_y + (crop_height / 2))
 
-    # Perform the crop
-    cropped_img = image[y1:y2, x1:x2]
-    return cropped_img
+    return x1, y1, x2, y2
 
 
 # Disable scientific notation for clarity
@@ -77,14 +75,15 @@ if not camera.isOpened():
     exit()
 
 # Main function for capturing and predicting
-def catScrew():
+def catScrew(x1, y1, x2, y2):
     # Grab the camera's image
         ret, image = camera.read()
         if not ret:
             print("Error: Failed to capture image from camera.")
 
         # Resize the raw image to (224, 224) pixels
-        cropped_image = crop_image_by_size(image)
+        cropped_image = image[y1:y2, x1:x2]
+        #cropped_image = crop_image_by_size(image)
         image_resized = cv2.resize(cropped_image, (224, 224), interpolation=cv2.INTER_AREA)
 
         # Show the image in a window
@@ -116,14 +115,14 @@ def greyCheck(img,width,height):
     # print(greyPixels)
     return greyPixels
 
-def objectCheck():
+def objectCheck(x1, y1, x2, y2):
     # Grab the camera's image
         ret, image = camera.read()
         if not ret:
             print("Error: Failed to capture image from camera.")
 
         # Resize the raw image to (224, 224) pixels
-        cropped_image = crop_image_by_size(image)
+        cropped_image = image[y1:y2, x1:x2]
         image_resized = cv2.resize(cropped_image, (224, 224), interpolation=cv2.INTER_AREA)
 
         # Show the image in a window
@@ -139,7 +138,7 @@ def objectCheck():
         # Print prediction and confidence score
         
 
-board = Arduino("COM15")
+board = Arduino("COM10")
 it = util.Iterator(board)
 it.start()
 
@@ -151,15 +150,16 @@ board.digital[7].write(180)
 board.digital[8].mode = SERVO
 board.digital[8].write(180)
 try:
+    ret, image = camera.read()
+    x1, y1, x2, y2 = crop_image_by_size(image)
     while True:
-        if(objectCheck()):
-            time.sleep(1)
-            class_name = catScrew()
-            board.digital[7].write(0)
-            board.digital[8].write(float(class_name[0])*22.5)
-            time.sleep(.5)
-            board.digital[7].write(180)
-            time.sleep(.5)
+        time.sleep(1)
+        class_name = catScrew(x1, y1, x2, y2)
+        board.digital[7].write(0)
+        board.digital[8].write(float(class_name[0])*22.5)
+        time.sleep(.5)
+        board.digital[7].write(180)
+        time.sleep(.5)
 
         time.sleep(1/5)
 
