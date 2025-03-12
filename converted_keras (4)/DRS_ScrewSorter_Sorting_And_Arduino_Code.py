@@ -23,7 +23,7 @@ def crop_image_by_size(image):
         return
     
     # Calculate the center of the image
-    center_x, center_y = (img_width / (1.6))-30, (img_height / (1.375))-70
+    center_x, center_y = (img_width / (1.6))-50, (img_height / (1.375))-70
 
     # Calculate the crop box
     x1 = math.floor(center_x - (crop_width / 2))
