@@ -48,7 +48,7 @@ class CustomDepthwiseConv2D(DepthwiseConv2D):
         super().__init__(**kwargs)
 
 # Verify the model file exists
-if not os.path.exists('keras_model.h5'):
+if not os.path.exists('converted_keras (4)\keras_model.h5'):
     print("Error: keras_model.h5 not found. Please ensure the file is in the same directory.")
     exit()
 
@@ -132,14 +132,15 @@ def objectCheck(x1, y1, x2, y2):
         # Preprocess the image for the model
         # image_array = np.asarray(image_resized, dtype=np.float32).reshape(1, 224, 224, 3)
         # image_array = (image_array / 127.5) - 1  # Normalize the image array
-
+        num_grey = greyCheck(image_resized,224,224)
         # Predict the class
-        return greyCheck(image_resized,224,224) > 2600
-        # print(num_grey)
+        #print(num_grey)
+        return num_grey > 7000
+        #
         # Print prediction and confidence score
         
 
-board = Arduino("COM3")
+board = Arduino("COM15")
 it = util.Iterator(board)
 it.start()
 
@@ -154,15 +155,16 @@ try:
     ret, image = camera.read()
     x1, y1, x2, y2 = crop_image_by_size(image)
     while True:
-        time.sleep(1)
-        class_name = catScrew(x1, y1, x2, y2)
-        board.digital[7].write(0)
-        board.digital[8].write(float(class_name[0])*22.5)
-        time.sleep(.5)
-        board.digital[7].write(180)
-        time.sleep(.5)
+        if(objectCheck(x1, y1, x2, y2)):
+            time.sleep(1)
+            class_name = catScrew(x1, y1, x2, y2)
+            board.digital[7].write(0)
+            board.digital[8].write(float(class_name[0])*22.5)
+            time.sleep(.5)
+            board.digital[7].write(180)
+            time.sleep(.5)
 
-        time.sleep(1/5)
+            time.sleep(1/5)
 
         keyboard_input = cv2.waitKey(1)
         if keyboard_input == 27:
